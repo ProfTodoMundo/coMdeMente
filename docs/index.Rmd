@@ -1,0 +1,197 @@
+---
+title: "Mi Encuesta Shiny App"
+author: "Carlos E Martinez R"
+date: "2023-09-11"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+library(shiny)
+library(ggplot2)
+```{r, echo=FALSE}
+# Define las opciones de la encuesta
+temas <- c(
+  "Miedo al abandono",
+  "Felicidad autoimpuesta, Miedo al fracaso, Sociedad obsesionada con el éxito",
+  "La dificultad para 'dejar ir'",
+  "Incapacidad para relacionarse afectivamente con otros.",
+  "Ambiente laboral hostil y acoso en el trabajo.",
+  "Tipos de apego en la relación, responsabilidad afectiva",
+  "'Ghosting'; desaparecer o cortar contacto de forma abrupta y sin explicación",
+  "Trastornos de la Conducta Alimentaria",
+  "Ansiedad",
+  "Deprimido y no sé por qué",
+  "Estrés y escuela, estrés y familia, estrés y pareja",
+  "Manejo de emociones",
+  "Efectos del clasismo en la salud mental",
+  "Prevención del feminicidio",
+  "Qué son los trastornos mentales",
+  "¿Esquizofrenia, por qué se presenta?",
+  "Síndrome de Asperger, de qué estamos hablando",
+  "Qué es el TOC (Trastorno Obsesivo Compulsivo)",
+  "Demencia ¿tema de adultos mayores?"
+)
+
+# Define la estructura de datos para almacenar respuestas
+respuestas <- data.frame(
+  CorreoElectronico = character(0),
+  Respuestas = character(0)
+)
+
+# Define la estructura de datos reactivos para contar votos
+conteo_votos <- reactiveVal(data.frame(Opcion = temas, Votos = integer(length(temas))))
+
+# Define la interfaz de la encuesta
+ui <- fluidPage(
+  titlePanel("Encuesta de Salud Mental"),
+  # Agrega la leyenda antes del formulario
+  HTML('<div style="text-align:left">
+       <p>El objetivo de esta encuesta es la de seleccionar hasta 12 temas para desarrollar en esta temporada en RadioUACM con el programa M de Mente, la lista de temas es la siguiente:</p>
+       <table>
+         <tr>
+           <th>Temas</th>
+           <th>Descripción</th>
+         </tr>
+         <tr>
+           <td>1. Miedo al abandono</td>
+           <td> 2. Felicidad autoimpuesta, Miedo al fracaso, Sociedad obsesionada con el éxito</td>
+         </tr>
+         <tr>
+           <td>3. La dificultad para dejar ir</td>
+           <td>4. Incapacidad para relacionarse afectivamente con otros.</td>
+           </tr>
+         <tr>
+
+           <td>5. Ambiente laboral hostil y acoso en el trabajo.</td>
+           <td>6. Tipos de apego en la relación, responsabilidad afectiva</td>
+           </tr>
+         <tr>
+
+           <td>7. \'Ghosting\'; desaparecer o cortar contacto de forma abrupta y sin explicación</td>
+           <td>8. Trastornos de la Conducta Alimentaria</td>
+         </tr>
+         <tr>
+           <td>9. Ansiedad</td>
+           <td>10. Deprimido y no sé por qué</td>
+           </tr>
+         <tr>
+           <td>11. Estrés y escuela, estrés y familia, estrés y pareja</td>
+           <td>12. Manejo de emociones</td>
+         </tr>
+         <tr>
+           <td>13. Efectos del clasismo en la salud mental</td>
+           <td>14. Prevención del feminicidio</td>
+         </tr>
+         <tr>
+           <td>15. Qué son los trastornos mentales</td>
+           <td>16. ¿Esquizofrenia, por qué se presenta?</td>
+           </tr>
+         <tr>
+           <td>17. Síndrome de Asperger, de qué estamos hablando</td>
+           <td>18. Qué es el TOC (Trastorno Obsesivo Compulsivo)</td>
+           </tr>
+         <tr>
+           <td>19. Demencia ¿tema de adultos mayores?</td>
+         </tr>
+       </table>
+     </div>'),
+  
+# Agrega el texto adicional
+HTML('<div style="text-align:center">
+           <p><em>Para poder participar en la encuesta es preciso que proporciones una dirección de correo electrónico válida.</em></p>
+         </div>'),
+
+sidebarLayout(
+  sidebarPanel(
+    h4("Por favor, ingrese su correo electrónico:"),
+    textInput("correo", "Correo Electrónico:"),
+    hr(),
+    h4("Por favor, seleccione las opciones que apliquen (selecciona 5 temas):"),
+    selectizeInput("tema1", "Tema 1:", choices = sample(temas), multiple = FALSE),
+    selectizeInput("tema2", "Tema 2:", choices = sample(temas), multiple = FALSE),
+    selectizeInput("tema3", "Tema 3:", choices = sample(temas), multiple = FALSE),
+    selectizeInput("tema4", "Tema 4:", choices = sample(temas), multiple = FALSE),
+    selectizeInput("tema5", "Tema 5:", choices = sample(temas), multiple = FALSE),
+    actionButton("enviar", "Enviar Respuestas")
+  ),
+  mainPanel(
+    # Eliminamos la línea "h4("Opciones seleccionadas:")"
+    tableOutput("tabla_votos")  # Cambiamos de plotlyOutput a tableOutput
+  )
+),
+# Agrega el texto al final de la página
+HTML('<div style="text-align:center">
+         <p><strong>Gracias por participar.</strong></p>
+       </div>
+       <p style="text-align:center;"><em>Para cualquier información escribir al correo <a href="mailto:escommdemente@gmail.com"><em>escommdemente@gmail.com</em></a>.</em></p>'
+     )
+)
+
+# Define el servidor
+server <- function(input, output, session) {
+  observeEvent(input$enviar, {
+    correo <- input$correo
+    temas_seleccionados <- c(input$tema1, input$tema2, input$tema3, input$tema4, input$tema5)
+    
+    # Verificar si se ha ingresado un correo electrónico
+    if (is.null(correo) || correo == "") {
+      showModal(modalDialog(
+        title = "Error",
+        "Por favor, ingrese su correo electrónico antes de enviar las respuestas.",
+        easyClose = TRUE
+      ))
+      return(NULL)
+    }
+    
+    # Verificar si el correo ya existe en la base de datos de respuestas
+    if (!correo %in% respuestas$CorreoElectronico) {
+      # Agregar las respuestas al data frame de respuestas
+      nueva_respuesta <- data.frame(CorreoElectronico = correo, Respuestas = paste(temas_seleccionados, collapse = ", "))
+      respuestas <<- rbind(respuestas, nueva_respuesta)
+      
+      # Actualizar el conteo de votos
+      for (opcion in temas_seleccionados) {
+        conteo_votos_df <- conteo_votos()
+        conteo_votos_df$Votos[conteo_votos_df$Opcion == opcion] <- conteo_votos_df$Votos[conteo_votos_df$Opcion == opcion] + 1
+        conteo_votos(conteo_votos_df)
+      }
+      
+      # Guardar las respuestas en un archivo CSV (puedes personalizar el nombre y la ubicación)
+      write.csv(respuestas, "respuestas_encuesta.csv", row.names = FALSE)
+      
+      # Limpia los campos después de enviar
+      updateTextInput(session, "correo", value = "")
+      updateSelectizeInput(session, "tema1", selected = character(0))
+      updateSelectizeInput(session, "tema2", selected = character(0))
+      updateSelectizeInput(session, "tema3", selected = character(0))
+      updateSelectizeInput(session, "tema4", selected = character(0))
+      updateSelectizeInput(session, "tema5", selected = character(0))
+      
+      # Muestra un mensaje de éxito
+      showModal(modalDialog(
+        title = "Respuestas enviadas",
+        "¡Gracias por participar en la encuesta!",
+        easyClose = TRUE
+      ))
+    } else {
+      # Muestra un mensaje de error si el correo ya existe
+      showModal(modalDialog(
+        title = "Error",
+        "Ya has registrado tus respuestas con este correo electrónico.",
+        easyClose = TRUE
+      ))
+    }
+  })
+  
+  # Crear una tabla de resultados de votos
+  output$tabla_votos <- renderTable({
+    conteo_votos()
+  })
+}
+
+# Crea la aplicación Shiny
+shinyApp(ui = ui, server = server)
+```
