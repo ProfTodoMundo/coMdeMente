@@ -1,0 +1,12 @@
+name: EncuestaTemas
+title: EncuestaTemas
+username: todomundo
+account: todomundo
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 9827813
+bundleId: 7670457
+url: https://todomundo.shinyapps.io/EncuestaTemas/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE

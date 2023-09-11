@@ -1,6 +1,6 @@
 ---
-title: "Mi Encuesta Shiny App"
-author: "Carlos E Martinez R"
+title: "Encuesta de temas para aobrdar esta temporada en RadioUACM"
+author: "con M de Mente"
 date: "2023-09-11"
 output: html_document
 runtime: shiny
@@ -47,7 +47,7 @@ conteo_votos <- reactiveVal(data.frame(Opcion = temas, Votos = integer(length(te
 
 # Define la interfaz de la encuesta
 ui <- fluidPage(
-  titlePanel("Encuesta de Salud Mental"),
+  titlePanel("Temporada 2023 de Radio"),
   # Agrega la leyenda antes del formulario
   HTML('<div style="text-align:left">
        <p>El objetivo de esta encuesta es la de seleccionar hasta 12 temas para desarrollar en esta temporada en RadioUACM con el programa M de Mente, la lista de temas es la siguiente:</p>
@@ -99,36 +99,37 @@ ui <- fluidPage(
          </tr>
        </table>
      </div>'),
-  
-# Agrega el texto adicional
-HTML('<div style="text-align:center">
+
+  # Agrega el texto adicional
+  HTML('<div style="text-align:center">
            <p><em>Para poder participar en la encuesta es preciso que proporciones una dirección de correo electrónico válida.</em></p>
          </div>'),
 
-sidebarLayout(
-  sidebarPanel(
-    h4("Por favor, ingrese su correo electrónico:"),
-    textInput("correo", "Correo Electrónico:"),
-    hr(),
-    h4("Por favor, seleccione las opciones que apliquen (selecciona 5 temas):"),
-    selectizeInput("tema1", "Tema 1:", choices = sample(temas), multiple = FALSE),
-    selectizeInput("tema2", "Tema 2:", choices = sample(temas), multiple = FALSE),
-    selectizeInput("tema3", "Tema 3:", choices = sample(temas), multiple = FALSE),
-    selectizeInput("tema4", "Tema 4:", choices = sample(temas), multiple = FALSE),
-    selectizeInput("tema5", "Tema 5:", choices = sample(temas), multiple = FALSE),
-    actionButton("enviar", "Enviar Respuestas")
+  sidebarLayout(
+    sidebarPanel(
+      h4("Por favor, ingrese su correo electrónico:"),
+      textInput("correo", "Correo Electrónico:"),
+      hr(),
+      h4("Por favor, seleccione las opciones que apliquen (selecciona 5 temas):"),
+      selectizeInput("tema1", "Tema 1:", choices = sample(temas), multiple = FALSE),
+      selectizeInput("tema2", "Tema 2:", choices = sample(temas), multiple = FALSE),
+      selectizeInput("tema3", "Tema 3:", choices = sample(temas), multiple = FALSE),
+      selectizeInput("tema4", "Tema 4:", choices = sample(temas), multiple = FALSE),
+      selectizeInput("tema5", "Tema 5:", choices = sample(temas), multiple = FALSE),
+      actionButton("enviar", "Enviar Respuestas"),
+      downloadButton("descargarCSV", "Descargar Resultados CSV")  # Botón de descarga CSV
+    ),
+    mainPanel(
+      # Eliminamos la línea "h4("Opciones seleccionadas:")"
+      tableOutput("tabla_votos")  # Cambiamos de plotlyOutput a tableOutput
+    )
   ),
-  mainPanel(
-    # Eliminamos la línea "h4("Opciones seleccionadas:")"
-    tableOutput("tabla_votos")  # Cambiamos de plotlyOutput a tableOutput
-  )
-),
-# Agrega el texto al final de la página
-HTML('<div style="text-align:center">
+  # Agrega el texto al final de la página
+  HTML('<div style="text-align:center">
          <p><strong>Gracias por participar.</strong></p>
        </div>
        <p style="text-align:center;"><em>Para cualquier información escribir al correo <a href="mailto:escommdemente@gmail.com"><em>escommdemente@gmail.com</em></a>.</em></p>'
-     )
+  )
 )
 
 # Define el servidor
@@ -191,8 +192,19 @@ server <- function(input, output, session) {
   output$tabla_votos <- renderTable({
     conteo_votos()
   })
+  
+  # Configurar el botón de descarga CSV
+  output$descargarCSV <- downloadHandler(
+    filename = function() {
+      "resultados_encuesta.csv"  # Nombre del archivo CSV a descargar
+    },
+    content = function(file) {
+      write.csv(conteo_votos(), file, row.names = FALSE)
+    }
+  )
 }
 
 # Crea la aplicación Shiny
 shinyApp(ui = ui, server = server)
+
 ```
