@@ -1,0 +1,109 @@
+---
+title: "Encuesta4"
+author: "Carlos E Martinez R"
+date: "2023-09-11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+library(shiny)
+
+# Define las opciones de votación
+opciones_votacion <- c(
+  "Miedo al abandono",
+  "Felicidad autoimpuesta, Miedo al fracaso, Sociedad obsesionada con el éxito",
+  "La dificultad para 'dejar ir'",
+  "Incapacidad para relacionarse afectivamente con otros.",
+  "Ambiente laboral hostil y acoso en el trabajo.",
+  "Tipos de apego en la relación, responsabilidad afectiva",
+  "'Ghosting'; desaparecer o cortar contacto de forma abrupta y sin explicación",
+  "Trastornos de la Conducta Alimentaria",
+  "Ansiedad",
+  "Deprimido y no sé por qué",
+  "Estrés y escuela, estrés y familia, estrés y pareja",
+  "Manejo de emociones",
+  "Efectos del clasismo en la salud mental",
+  "Prevención del feminicidio",
+  "Qué son los trastornos mentales",
+  "¿Esquizofrenia, por qué se presenta?",
+  "Síndrome de Asperger, de qué estamos hablando",
+  "Qué es el TOC (Trastorno Obsesivo Compulsivo)",
+  "Demencia ¿tema de adultos mayores?"
+)
+
+# Define la interfaz de la aplicación Shiny
+ui <- fluidPage(
+  titlePanel("Votación sobre temas de salud mental"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("opcion1", "Primer voto:", choices = opciones_votacion),
+      selectInput("opcion2", "Segundo voto:", choices = opciones_votacion),
+      selectInput("opcion3", "Tercer voto:", choices = opciones_votacion),
+      textInput("correo", "Correo electrónico:"),
+      actionButton("votar", "Votar"),
+      downloadButton("descargar", "Descargar resultados")
+    ),
+    mainPanel(
+      plotOutput("resultados_plot")
+    )
+  )
+)
+
+# Define el servidor de la aplicación Shiny
+server <- function(input, output) {
+  votos <- data.frame(Email = character(), Voto1 = character(), Voto2 = character(), Voto3 = character())
+
+  observeEvent(input$votar, {
+    nuevo_voto <- data.frame(
+      Email = input$correo,
+      Voto1 = input$opcion1,
+      Voto2 = input$opcion2,
+      Voto3 = input$opcion3
+    )
+    votos <<- rbind(votos, nuevo_voto)
+  })
+
+  output$resultados_plot <- renderPlot({
+    votos_agrupados <- as.data.frame(table(Voto1 = votos$Voto1, Voto2 = votos$Voto2, Voto3 = votos$Voto3))
+    votos_agrupados$Opciones <- apply(votos_agrupados, 1, function(x) paste(x, collapse = ", "))
+    votos_agrupados <- votos_agrupados[order(-votos_agrupados$Freq), ]
+
+    # Combine las columnas de votos en una sola columna para el eje X del gráfico
+    opciones_combinadas <- apply(votos_agrupados[, 1:3], 1, function(x) paste(x, collapse = ", "))
+
+    barplot(votos_agrupados$Freq, names.arg = opciones_combinadas,
+            main = "Resultados Parciales de la Votación",
+            xlab = "Opciones de Votación",
+            ylab = "Número de Votos", las = 2, cex.names = 0.7)
+  })
+
+  output$descargar <- downloadHandler(
+    filename = function() {
+      "resultados_votacion.csv"
+    },
+    content = function(file) {
+      write.csv(votos, file, row.names = FALSE)
+    }
+  )
+}
+
+# Ejecuta la aplicación Shiny
+shinyApp(ui, server)
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
