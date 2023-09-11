@@ -2,7 +2,7 @@
 title: "Encuesta de temas por presentar en Radio UACM"
 author: "con M de Mente"
 output: html_document
-runtime: shiny
+runtime: html
 css: estilos.css
 ---
 
