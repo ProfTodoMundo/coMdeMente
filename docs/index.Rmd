@@ -8,9 +8,10 @@ runtime: shiny
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-```
 library(shiny)
 library(ggplot2)
+```
+
 ```{r, echo=FALSE}
 # Define las opciones de la encuesta
 temas <- c(
