@@ -1,0 +1,142 @@
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(shiny)
+library(plotly)
+library(ggplot2)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+library(shiny)
+library(ggplot2)
+# Define las opciones de la encuesta
+temas <- c(
+  "Miedo al abandono",
+  "Felicidad autoimpuesta, Miedo al fracaso, Sociedad obsesionada con el éxito",
+  "La dificultad para 'dejar ir'",
+  "Incapacidad para relacionarse afectivamente con otros.",
+  "Ambiente laboral hostil y acoso en el trabajo.",
+  "Tipos de apego en la relación, responsabilidad afectiva",
+  "'Ghosting'; desaparecer o cortar contacto de forma abrupta y sin explicación",
+  "Trastornos de la Conducta Alimentaria",
+  "Ansiedad",
+  "Deprimido y no sé por qué",
+  "Estrés y escuela, estrés y familia, estrés y pareja",
+  "Manejo de emociones",
+  "Efectos del clasismo en la salud mental",
+  "Prevención del feminicidio",
+  "Qué son los trastornos mentales",
+  "¿Esquizofrenia, por qué se presenta?",
+  "Síndrome de Asperger, de qué estamos hablando",
+  "Qué es el TOC (Trastorno Obsesivo Compulsivo)",
+  "Demencia ¿tema de adultos mayores?"
+)
+
+# Define la estructura de datos para almacenar respuestas
+respuestas <- data.frame(
+  CorreoElectronico = character(0),
+  Respuestas = character(0)
+)
+
+# Define la estructura de datos para contar votos
+conteo_votos <- data.frame(Opcion = temas, Votos = integer(length(temas)))
+# Define la interfaz de la encuesta
+ui <- fluidPage(
+  titlePanel("Encuesta de Salud Mental"),
+  sidebarLayout(
+    sidebarPanel(
+      h4("Por favor, ingrese su correo electrónico:"),
+      textInput("correo", "Correo Electrónico:"),
+      hr(),
+      h4("Por favor, seleccione las opciones que apliquen:"),
+      selectizeInput("tema1", "Tema 1:", choices = sample(temas), multiple = FALSE),
+      selectizeInput("tema2", "Tema 2:", choices = sample(temas), multiple = FALSE),
+      selectizeInput("tema3", "Tema 3:", choices = sample(temas), multiple = FALSE),
+#      selectizeInput("tema4", "Tema 4:", choices = temas, multiple = TRUE),
+#      selectizeInput("tema5", "Tema 5:", choices = temas, multiple = TRUE),
+      actionButton("enviar", "Enviar Respuestas")
+    ),
+    mainPanel(
+      h4("Opciones seleccionadas:"),
+      verbatimTextOutput("respuestas_seleccionadas"),
+      plotlyOutput("grafico_votos")
+    )
+  )
+)
+
+# Define el servidor
+server <- function(input, output, session) {
+  output$respuestas_seleccionadas <- renderText({
+    paste(input$tema1, input$tema2, input$tema3, collapse = ", ")
+  })
+  
+  observeEvent(input$enviar, {
+    correo <- input$correo
+    temas_seleccionados <- c(input$tema1, input$tema2, input$tema3)
+    
+    # Verificar si el correo ya existe en la base de datos de respuestas
+    if (!correo %in% respuestas$CorreoElectronico) {
+      # Agregar las respuestas al data frame de respuestas
+      nueva_respuesta <- data.frame(CorreoElectronico = correo, Respuestas = paste(temas_seleccionados, collapse = ", "))
+      respuestas <<- rbind(respuestas, nueva_respuesta)
+      
+      # Actualizar el conteo de votos
+      for (opcion in temas_seleccionados) {
+        conteo_votos$Votos[conteo_votos$Opcion == opcion] <- conteo_votos$Votos[conteo_votos$Opcion == opcion] + 1
+      }
+      
+      # Guardar las respuestas en un archivo CSV (puedes personalizar el nombre y la ubicación)
+      write.csv(respuestas, "respuestas_encuesta.csv", row.names = FALSE)
+      
+      # Limpia los campos después de enviar
+      updateTextInput(session, "correo", value = "")
+      updateSelectizeInput(session, "tema1", selected = character(0))
+      updateSelectizeInput(session, "tema2", selected = character(0))
+      updateSelectizeInput(session, "tema3", selected = character(0))
+      
+      # Muestra un mensaje de éxito
+      showModal(modalDialog(
+        title = "Respuestas enviadas",
+        "¡Gracias por participar en la encuesta!",
+        easyClose = TRUE
+      ))
+    } else {
+      # Muestra un mensaje de error si el correo ya existe
+      showModal(modalDialog(
+        title = "Error",
+        "Ya has registrado tus respuestas con este correo electrónico.",
+        easyClose = TRUE
+      ))
+    }
+  })
+  
+  # Filtrar las opciones con más de un voto
+  opciones_filtradas <- reactive({
+    conteo_votos[conteo_votos$Votos > 1, ]
+  })
+  
+  # Crear un gráfico de barras
+  output$grafico_votos <- renderPlot({
+    ggplot(opciones_filtradas(), aes(x = Opcion, y = Votos)) +
+      geom_bar(stat = "identity") +
+      labs(title = "Opciones con más de un voto", x = "Opción", y = "Número de Votos")
+  })
+}
+
+# Crea la aplicación Shiny
+shinyApp(ui = ui, server = server)
+
+
+```
+
